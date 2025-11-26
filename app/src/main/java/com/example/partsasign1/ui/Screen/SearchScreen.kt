@@ -28,6 +28,8 @@ fun SearchScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchType by viewModel.searchType.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
+    val loading by viewModel.loading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     Scaffold(
         topBar = {
@@ -71,7 +73,36 @@ fun SearchScreen(
             }
 
             // Results
-            if (searchResults.isEmpty()) {
+            when {
+                loading -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(Modifier.height(12.dp))
+                        Text("Cargando repuestos...")
+                    }
+                }
+                error != null -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(error ?: "Error inesperado")
+                        Spacer(Modifier.height(12.dp))
+                        Button(onClick = viewModel::refresh) {
+                            Text("Reintentar")
+                        }
+                    }
+                }
+                searchResults.isEmpty() -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -81,7 +112,8 @@ fun SearchScreen(
                 ) {
                     Text("No se encontraron resultados")
                 }
-            } else {
+                }
+                else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp)
@@ -92,6 +124,7 @@ fun SearchScreen(
                             onClick = { onRepuestoClick(repuesto.id) }
                         )
                     }
+                }
                 }
             }
         }

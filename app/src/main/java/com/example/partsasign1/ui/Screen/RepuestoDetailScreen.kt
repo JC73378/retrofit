@@ -16,6 +16,8 @@ fun RepuestoDetailScreen(
 
 ) {
     val repuesto by viewModel.repuestoDetail.collectAsState()
+    val loading by viewModel.loading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     Scaffold(
         topBar = {
@@ -30,29 +32,53 @@ fun RepuestoDetailScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            repuesto?.let { item ->
-                Card(
-                    modifier = Modifier
-                        .padding(16.dp)
-                        .fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        DetailRow("Nombre:", item.nombre)
-                        DetailRow("Código 365:", item.codigo365)
-                        DetailRow("Código de barras:", item.codigoBarras)
-                        DetailRow("Stock actual:", item.stockActual.toString())
-                        DetailRow("Ubicación:", item.ubicacion)
-                        DetailRow("Categoría:", item.categoria)
+            when {
+                loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
                     }
                 }
-            } ?: run {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
-                ) {
-                    Text("No se encontró información del repuesto.")
+                error != null -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        Text(error ?: "Error inesperado")
+                    }
+                }
+                repuesto != null -> {
+                    val item = repuesto!!
+                    Card(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            DetailRow("Nombre:", item.nombre)
+                            DetailRow("Código 365:", item.codigo365)
+                            DetailRow("Código de barras:", item.codigoBarras)
+                            DetailRow("Stock actual:", item.stockActual.toString())
+                            DetailRow("Ubicación:", item.ubicacion)
+                            DetailRow("Categoría:", item.categoria)
+                        }
+                    }
+                }
+                else -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        Text("No se encontró información del repuesto.")
+                    }
                 }
             }
         }

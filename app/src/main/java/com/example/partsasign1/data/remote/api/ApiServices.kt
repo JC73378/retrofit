@@ -1,5 +1,7 @@
 package com.example.partsasign1.data.remote.api
 
+import com.example.partsasign1.data.remote.model.LoginRequest
+import com.example.partsasign1.data.remote.model.LoginResponse
 import com.example.partsasign1.data.remote.model.OtProgramadaDto
 import com.example.partsasign1.data.remote.model.RecepcionDto
 import com.example.partsasign1.data.remote.model.RepuestoDto
@@ -16,6 +18,9 @@ import retrofit2.http.Query
 interface RepuestosApi {
     @GET("/api/repuestos")
     suspend fun listar(): List<RepuestoDto>
+
+    @GET("/api/repuestos/{id}")
+    suspend fun obtener(@Path("id") id: Int): RepuestoDto
 
     @POST("/api/repuestos")
     suspend fun crear(@Body body: RepuestoDto): RepuestoDto

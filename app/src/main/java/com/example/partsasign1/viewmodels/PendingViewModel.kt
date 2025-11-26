@@ -5,38 +5,41 @@ import com.example.partsasign1.model.Repuesto
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.util.Date
+import androidx.lifecycle.viewModelScope
+import com.example.partsasign1.data.remote.model.toDomain
+import com.example.partsasign1.data.remote.repository.RepuestosRemoteRepository
+import kotlinx.coroutines.launch
 
 class PendingViewModel : ViewModel() {
+    private val repo = RepuestosRemoteRepository()
+
     private val _pendingRepuestos = MutableStateFlow(emptyList<Repuesto>())
     val pendingRepuestos: StateFlow<List<Repuesto>> = _pendingRepuestos.asStateFlow()
 
-    init {
+    private val _loading = MutableStateFlow(false)
+    val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
-        if (_pendingRepuestos.value.isEmpty()) {
-            loadPendingRepuestos()
-        }
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+
+    init {
+        refresh()
     }
 
-    private fun loadPendingRepuestos() {
-        _pendingRepuestos.value = listOf(
-            Repuesto(
-                id = "1",
-                codigo365 = "RPT-001",
-                nombre = "Motor Eléctrico 5HP",
-                codigoBarras = "1234567890123",
-                stockActual = 0,
-                ubicacion = "Almacén A - Estante 4B"
-            ),
-            Repuesto(
-                id = "2",
-                codigo365 = "RPT-002",
-                nombre = "Rodamiento SKF 6205",
-                codigoBarras = "1234567890124",
-                stockActual = 0,
-                ubicacion = "Almacén B - Estante 2A"
-            )
-        )
+    fun refresh() {
+        _loading.value = true
+        _error.value = null
+        viewModelScope.launch {
+            try {
+                // Consideramos "pendiente" a los repuestos con stock 0
+                _pendingRepuestos.value = repo.listar().toDomain().filter { it.stockActual <= 0 }
+            } catch (e: Exception) {
+                _error.value = e.message ?: "Error al cargar pendientes"
+                _pendingRepuestos.value = emptyList()
+            } finally {
+                _loading.value = false
+            }
+        }
     }
 
     fun marcarRecibido(repuestoId: String) {

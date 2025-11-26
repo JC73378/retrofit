@@ -14,11 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.partsasign1.domain.Validation.rutValido
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import java.text.SimpleDateFormat
 import java.util.*
+import com.example.partsasign1.data.remote.model.OtProgramadaDto
+import com.example.partsasign1.data.remote.repository.OtRemoteRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +35,9 @@ fun OTProgramadaScreen(
 
 
     var isLoading by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    val repo = remember { OtRemoteRepository() }
 
 
     val sdf = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
@@ -149,12 +152,27 @@ fun OTProgramadaScreen(
 
 
                         isLoading = true
+                        error = null
 
                         scope.launch {
-                            delay(3000) //simula la carga
-                            onOTGuardada(repuestoId) //  Marca como recibido el repuesto
-                            isLoading = false
-                            onBack() // ← Navegar de regreso
+                            try {
+                                repo.crear(
+                                    OtProgramadaDto(
+                                        nombreTecnico = nombre,
+                                        apellidoTecnico = apellido,
+                                        rutTecnico = rut,
+                                        numeroEquipo = numeroEquipo,
+                                        fechaFirma = sdf.format(Date(fechaFirmaMillis)),
+                                        repuestoId = repuestoId
+                                    )
+                                )
+                                onOTGuardada(repuestoId)
+                                onBack()
+                            } catch (e: Exception) {
+                                error = e.message ?: "No se pudo guardar la OT"
+                            } finally {
+                                isLoading = false
+                            }
                         }
                     },
                     modifier = Modifier.weight(1f),
@@ -196,5 +214,16 @@ fun OTProgramadaScreen(
         ) {
             DatePicker(state = dateState)
         }
+    }
+
+    error?.let { message ->
+        AlertDialog(
+            onDismissRequest = { error = null },
+            confirmButton = {
+                TextButton(onClick = { error = null }) { Text("Entendido") }
+            },
+            title = { Text("Error") },
+            text = { Text(message) }
+        )
     }
 }

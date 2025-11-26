@@ -17,6 +17,7 @@ class RepuestosRemoteRepository(
     private val api: RepuestosApi = RetrofitClients.repuestosApi
 ) {
     suspend fun listar(): List<RepuestoDto> = api.listar()
+    suspend fun obtener(id: Int): RepuestoDto = api.obtener(id)
     suspend fun crear(body: RepuestoDto): RepuestoDto = api.crear(body)
     suspend fun actualizar(id: Int, body: RepuestoDto): RepuestoDto = api.actualizar(id, body)
     suspend fun eliminar(id: Int): Response<Unit> = api.eliminar(id)

@@ -1,32 +1,34 @@
 package com.example.partsasign1.Viewmodels
 
 import androidx.lifecycle.ViewModel
-import com.example.partsasign1.domain.Validation.validateEmail
+import com.example.partsasign1.data.remote.repository.AuthRemoteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import com.example.partsasign1.data.local.repository.UserRepository
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 data class LoginState(
-    val email: String = "",
-    val emailError: String? = null,
+    val username: String = "",
+    val usernameError: String? = null,
     val password: String = "",
     val passwordError: String? = null,
     val loginSuccess: Boolean = false,
-    val currentUser: Any? = null,
+    val token: String? = null,
+    val rol: String? = null,
     val isLoading: Boolean = false
 )
 
-
-class AutentViewModel(private val userRepository: UserRepository) : ViewModel() {
+class AutentViewModel(
+    private val authRepository: AuthRemoteRepository = AuthRemoteRepository()
+) : ViewModel() {
     private val _uiState = MutableStateFlow(LoginState())
     val uiState: StateFlow<LoginState> = _uiState.asStateFlow()
 
-    fun onEmailChange(email: String) {
-        _uiState.update { it.copy(email = email, emailError = null) }
+    fun onUsernameChange(username: String) {
+        _uiState.update { it.copy(username = username, usernameError = null, passwordError = null) }
     }
 
     fun onPasswordChange(password: String) {
@@ -35,12 +37,12 @@ class AutentViewModel(private val userRepository: UserRepository) : ViewModel() 
 
     fun onLoginClick() {
         val currentState = _uiState.value
-        val emailError = validateEmail(currentState.email)
+        val usernameError = if (currentState.username.isBlank()) "El usuario es obligatorio" else null
         val passError = if (currentState.password.isBlank()) "La contraseña es obligatoria" else null
 
-        if (emailError != null || passError != null) {
+        if (usernameError != null || passError != null) {
             _uiState.update {
-                it.copy(emailError = emailError, passwordError = passError)
+                it.copy(usernameError = usernameError, passwordError = passError)
             }
         } else {
 
@@ -48,13 +50,24 @@ class AutentViewModel(private val userRepository: UserRepository) : ViewModel() 
 
             viewModelScope.launch {
 
-                val result = userRepository.login(currentState.email, currentState.password)
-                _uiState.update { it.copy(isLoading = false) }
-
-                if (result.isSuccess) {
-                    _uiState.update { it.copy(loginSuccess = true) }
-                } else {
-                    _uiState.update { it.copy(passwordError = "Credenciales incorrectas") }
+                try {
+                    val result = authRepository.login(currentState.username, currentState.password)
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            loginSuccess = true,
+                            token = result.token,
+                            rol = result.rol,
+                            usernameError = null,
+                            passwordError = null
+                        )
+                    }
+                } catch (e: Exception) {
+                    val message = when (e) {
+                        is HttpException -> "Credenciales incorrectas"
+                        else -> e.message ?: "Error inesperado"
+                    }
+                    _uiState.update { it.copy(isLoading = false, passwordError = message) }
                 }
             }
         }

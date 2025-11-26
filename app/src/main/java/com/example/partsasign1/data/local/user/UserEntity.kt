@@ -1,12 +1,7 @@
 package com.example.partsasign1.data.local.user
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "users")
+/** Modelo placeholder sin persistencia local. */
 data class UserEntity(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0L,
-    val email: String,      // ← Solo esto
-    val password: String    // ← Y esto
+    val email: String,
+    val password: String
 )

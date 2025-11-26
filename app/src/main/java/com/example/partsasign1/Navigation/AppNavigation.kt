@@ -11,10 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.partsasign1.ui.Screen.*
 import com.example.partsasign1.viewmodels.*
-import androidx.compose.ui.platform.LocalContext
 import com.example.partsasign1.Viewmodels.AutentViewModel
-import com.example.partsasign1.data.local.database.AppDatabase
-import com.example.partsasign1.data.local.repository.UserRepository
 
 @Composable
 fun AppNavigation(navController: NavHostController = rememberNavController()) {
@@ -25,11 +22,7 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
     NavHost(navController = navController, startDestination = Route.Login.path) {
 
         composable(Route.Login.path) {
-            val context = LocalContext.current
-            val appDatabase = AppDatabase.getInstance(context)
-            val userDao = appDatabase.userDao()
-            val userRepository = UserRepository(userDao)
-            val autentViewModel = remember { AutentViewModel(userRepository) }
+            val autentViewModel: AutentViewModel = viewModel()
 
             LogScreen(
                 onLoginSuccess = {

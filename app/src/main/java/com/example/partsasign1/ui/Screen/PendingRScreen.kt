@@ -24,6 +24,8 @@ fun PendingRScreen(
     onNavigateToOTProgramada: (String) -> Unit
 ) {
     val pendingRepuestos by viewModel.pendingRepuestos.collectAsState()
+    val loading by viewModel.loading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     Scaffold(
         topBar = {
@@ -34,7 +36,36 @@ fun PendingRScreen(
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
-            if (pendingRepuestos.isEmpty()) {
+            when {
+                loading -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(Modifier.height(12.dp))
+                        Text("Cargando pendientes...")
+                    }
+                }
+                error != null -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(error ?: "Error inesperado")
+                        Spacer(Modifier.height(12.dp))
+                        Button(onClick = viewModel::refresh) {
+                            Text("Reintentar")
+                        }
+                    }
+                }
+                pendingRepuestos.isEmpty() -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -51,7 +82,8 @@ fun PendingRScreen(
                     Spacer(Modifier.height(16.dp))
                     Text("No hay repuestos pendientes", style = MaterialTheme.typography.bodyLarge)
                 }
-            } else {
+                }
+                else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
@@ -79,6 +111,7 @@ fun PendingRScreen(
                             }
                         }
                     }
+                }
                 }
             }
         }

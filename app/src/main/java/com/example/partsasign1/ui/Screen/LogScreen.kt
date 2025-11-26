@@ -31,12 +31,12 @@ fun LogScreen(
         Text("Gestión Repuestos", style = MaterialTheme.typography.headlineMedium)
         Spacer(Modifier.height(32.dp))
         OutlinedTextField(
-            value = uiState.email,
-            onValueChange = viewModel::onEmailChange,
-            label = { Text("Correo Electrónico") },
+            value = uiState.username,
+            onValueChange = viewModel::onUsernameChange,
+            label = { Text("Usuario") },
             modifier = Modifier.fillMaxWidth(),
-            isError = uiState.emailError != null,
-            supportingText = { uiState.emailError?.let { Text(it) } }
+            isError = uiState.usernameError != null,
+            supportingText = { uiState.usernameError?.let { Text(it) } }
         )
         Spacer(Modifier.height(16.dp))
         OutlinedTextField(
@@ -71,4 +71,3 @@ fun LogScreenPreview() {
         )
     }
 }
-
