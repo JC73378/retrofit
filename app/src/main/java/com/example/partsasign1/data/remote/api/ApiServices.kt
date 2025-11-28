@@ -3,8 +3,8 @@ package com.example.partsasign1.data.remote.api
 import com.example.partsasign1.data.remote.model.LoginRequest
 import com.example.partsasign1.data.remote.model.LoginResponse
 import com.example.partsasign1.data.remote.model.OtProgramadaDto
-import com.example.partsasign1.data.remote.model.RecepcionDto
 import com.example.partsasign1.data.remote.model.RepuestoDto
+import com.example.partsasign1.data.remote.model.SolicitudDto
 import com.example.partsasign1.data.remote.model.UsuarioDto
 import retrofit2.Response
 import retrofit2.http.Body
@@ -46,17 +46,17 @@ interface OtApi {
     suspend fun eliminar(@Path("id") id: Int): Response<Unit>
 }
 
-interface RecepcionApi {
-    @GET("/api/recepciones")
-    suspend fun listar(): List<RecepcionDto>
+interface SolicitudesApi {
+    @GET("/api/solicitudes")
+    suspend fun listar(): List<SolicitudDto>
 
-    @POST("/api/recepciones")
-    suspend fun crear(@Body body: RecepcionDto): RecepcionDto
+    @POST("/api/solicitudes")
+    suspend fun crear(@Body body: SolicitudDto): SolicitudDto
 
-    @PUT("/api/recepciones/{id}")
-    suspend fun actualizar(@Path("id") id: Int, @Body body: RecepcionDto): RecepcionDto
+    @PUT("/api/solicitudes/{id}")
+    suspend fun actualizar(@Path("id") id: Int, @Body body: SolicitudDto): SolicitudDto
 
-    @DELETE("/api/recepciones/{id}")
+    @DELETE("/api/solicitudes/{id}")
     suspend fun eliminar(@Path("id") id: Int): Response<Unit>
 }
 

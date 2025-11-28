@@ -14,17 +14,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.partsasign1.domain.Validation.rutValido
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
+import com.example.partsasign1.viewmodels.OtProgramadaPayload
+import com.example.partsasign1.viewmodels.PendingViewModel
 import java.text.SimpleDateFormat
-import java.util.*
-import com.example.partsasign1.data.remote.model.OtProgramadaDto
-import com.example.partsasign1.data.remote.repository.OtRemoteRepository
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OTProgramadaScreen(
     repuestoId: String,
+    viewModel: PendingViewModel,
     onBack: () -> Unit,
     onOTGuardada: (String) -> Unit = {}
 ) {
@@ -33,17 +33,42 @@ fun OTProgramadaScreen(
     var rut by rememberSaveable { mutableStateOf("") }
     var numeroEquipo by rememberSaveable { mutableStateOf("") }
 
-
-    var isLoading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
-    val repo = remember { OtRemoteRepository() }
-
+    val loadingListado by viewModel.loading.collectAsState()
+    val actionLoading by viewModel.actionLoading.collectAsState()
+    val actionError by viewModel.actionError.collectAsState()
+    val pendingOts by viewModel.pendingOts.collectAsState()
 
     val sdf = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
     var fechaFirmaMillis by rememberSaveable { mutableStateOf(System.currentTimeMillis()) }
     var showDatePicker by remember { mutableStateOf(false) }
     var showErrors by remember { mutableStateOf(false) }
+
+    val otExistente = pendingOts.firstOrNull { it.repuestoId == repuestoId }
+    val isProcessing = loadingListado || actionLoading
+
+    LaunchedEffect(repuestoId) {
+        viewModel.refresh()
+        viewModel.clearActionState()
+        nombre = ""
+        apellido = ""
+        rut = ""
+        numeroEquipo = ""
+        fechaFirmaMillis = System.currentTimeMillis()
+    }
+
+    LaunchedEffect(otExistente?.id) {
+        otExistente?.let { ot ->
+            nombre = ot.nombreTecnico
+            apellido = ot.apellidoTecnico
+            rut = ot.rutTecnico
+            numeroEquipo = ot.numeroEquipo
+            fechaFirmaMillis = try {
+                sdf.parse(ot.fechaFirma)?.time ?: System.currentTimeMillis()
+            } catch (_: Exception) {
+                System.currentTimeMillis()
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -52,9 +77,9 @@ fun OTProgramadaScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                        enabled = !isLoading
+                        enabled = !isProcessing
                     ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atras")
                     }
                 }
             )
@@ -71,10 +96,10 @@ fun OTProgramadaScreen(
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
-                label = { Text("Nombre del técnico *") },
+                label = { Text("Nombre del tecnico *") },
                 singleLine = true,
                 isError = showErrors && nombre.isBlank(),
-                enabled = !isLoading,
+                enabled = !isProcessing,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -84,29 +109,29 @@ fun OTProgramadaScreen(
                 label = { Text("Apellido *") },
                 singleLine = true,
                 isError = showErrors && apellido.isBlank(),
-                enabled = !isLoading,
+                enabled = !isProcessing,
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = rut,
                 onValueChange = { rut = it.uppercase() },
-                label = { Text("RUT (con guión) *") },
+                label = { Text("RUT (con guion) *") },
                 placeholder = { Text("12.345.678-9") },
                 singleLine = true,
                 isError = showErrors && !rutValido(rut),
-                enabled = !isLoading,
+                enabled = !isProcessing,
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = numeroEquipo,
                 onValueChange = { if (it.all { c -> c.isDigit() }) numeroEquipo = it },
-                label = { Text("Número de equipo *") },
+                label = { Text("Numero de equipo *") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 isError = showErrors && numeroEquipo.isBlank(),
-                enabled = !isLoading,
+                enabled = !isProcessing,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -118,11 +143,11 @@ fun OTProgramadaScreen(
                 trailingIcon = {
                     TextButton(
                         onClick = { showDatePicker = true },
-                        enabled = !isLoading
+                        enabled = !isProcessing
                     ) { Text("Cambiar") }
                 },
                 isError = showErrors && fechaFirmaMillis <= 0L,
-                enabled = !isLoading,
+                enabled = !isProcessing,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -136,7 +161,7 @@ fun OTProgramadaScreen(
                 OutlinedButton(
                     onClick = onBack,
                     modifier = Modifier.weight(1f),
-                    enabled = !isLoading
+                    enabled = !isProcessing
                 ) { Text("Cancelar") }
 
                 Button(
@@ -150,36 +175,26 @@ fun OTProgramadaScreen(
                             return@Button
                         }
 
-
-                        isLoading = true
-                        error = null
-
-                        scope.launch {
-                            try {
-                                repo.crear(
-                                    OtProgramadaDto(
-                                        nombreTecnico = nombre,
-                                        apellidoTecnico = apellido,
-                                        rutTecnico = rut,
-                                        numeroEquipo = numeroEquipo,
-                                        fechaFirma = sdf.format(Date(fechaFirmaMillis)),
-                                        repuestoId = repuestoId
-                                    )
-                                )
-                                onOTGuardada(repuestoId)
-                                onBack()
-                            } catch (e: Exception) {
-                                error = e.message ?: "No se pudo guardar la OT"
-                            } finally {
-                                isLoading = false
-                            }
+                        viewModel.guardarOt(
+                            OtProgramadaPayload(
+                                id = otExistente?.id,
+                                nombreTecnico = nombre,
+                                apellidoTecnico = apellido,
+                                rutTecnico = rut,
+                                numeroEquipo = numeroEquipo,
+                                fechaFirma = sdf.format(Date(fechaFirmaMillis)),
+                                repuestoId = repuestoId
+                            )
+                        ) {
+                            onOTGuardada(repuestoId)
+                            onBack()
                         }
                     },
                     modifier = Modifier.weight(1f),
-                    enabled = !isLoading
+                    enabled = !isProcessing
                 ) {
 
-                    if (isLoading) {
+                    if (isProcessing) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
@@ -191,6 +206,21 @@ fun OTProgramadaScreen(
                     } else {
                         Text("Guardar OT")
                     }
+                }
+            }
+
+            if (otExistente?.id != null) {
+                TextButton(
+                    onClick = {
+                        val id = otExistente.id
+                        viewModel.eliminarOt(id) {
+                            onOTGuardada(repuestoId)
+                            onBack()
+                        }
+                    },
+                    enabled = !isProcessing
+                ) {
+                    Text("Eliminar OT")
                 }
             }
         }
@@ -216,11 +246,11 @@ fun OTProgramadaScreen(
         }
     }
 
-    error?.let { message ->
+    actionError?.let { message ->
         AlertDialog(
-            onDismissRequest = { error = null },
+            onDismissRequest = { viewModel.clearActionState() },
             confirmButton = {
-                TextButton(onClick = { error = null }) { Text("Entendido") }
+                TextButton(onClick = { viewModel.clearActionState() }) { Text("Entendido") }
             },
             title = { Text("Error") },
             text = { Text(message) }

@@ -1,61 +1,104 @@
 package com.example.partsasign1.ui.Screen
 
-import androidx.compose.foundation.layout.*
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import com.example.partsasign1.viewmodels.SolicitudRepuesto
-
-// IMPORTACIONES PARA NotificaciónES
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-// Permisos DE NOTIFICACIONES
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import androidx.core.content.ContextCompat
+import com.example.partsasign1.viewmodels.SolicitudRepuesto
+import com.example.partsasign1.viewmodels.SolicitudesViewModel
+import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SolicitudRepuestoScreen(
+    viewModel: SolicitudesViewModel,
     onBack: () -> Unit,
-    onGuardado: (SolicitudRepuesto) -> Unit
+    onGuardado: () -> Unit
 ) {
     var codigo by rememberSaveable { mutableStateOf("") }
     var nombreTecnico by rememberSaveable { mutableStateOf("") }
     var tipoRepuesto by rememberSaveable { mutableStateOf("") }
     var cantidad by rememberSaveable { mutableStateOf("") }
     var descripcion by rememberSaveable { mutableStateOf("") }
-
     var showErrors by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
+
+    val tipos = listOf("El\u00e9ctrico", "Mec\u00e1nico", "Hidr\u00e1ulico", "Neum\u00e1tico", "Otros")
+
+    val actionLoading by viewModel.actionLoading.collectAsState()
+    val actionError by viewModel.actionError.collectAsState()
+    val actionMessage by viewModel.actionMessage.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    val tipos = listOf("Eléctrico", "Mecánico", "Hidráulico", "Neumático", "Otros")
-    var expanded by remember { mutableStateOf(false) }
+    LaunchedEffect(actionError) {
+        actionError?.let { snackbarHostState.showSnackbar(it); viewModel.clearActionMessages() }
+    }
+    LaunchedEffect(actionMessage) {
+        actionMessage?.let { snackbarHostState.showSnackbar(it); viewModel.clearActionMessages() }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Solicitar repuesto") },
                 navigationIcon = {
-                    IconButton(onClick = onBack, enabled = !isLoading) {
+                    IconButton(onClick = onBack, enabled = !actionLoading) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -71,7 +114,7 @@ fun SolicitudRepuestoScreen(
                 label = { Text("Código de repuesto *") },
                 singleLine = true,
                 isError = showErrors && codigo.isBlank(),
-                enabled = !isLoading,
+                enabled = !actionLoading,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -81,21 +124,22 @@ fun SolicitudRepuestoScreen(
                 label = { Text("Nombre del técnico *") },
                 singleLine = true,
                 isError = showErrors && nombreTecnico.isBlank(),
-                enabled = !isLoading,
+                enabled = !actionLoading,
                 modifier = Modifier.fillMaxWidth()
             )
 
             ExposedDropdownMenuBox(
                 expanded = expanded,
-                onExpandedChange = { expanded = it && !isLoading }
+                onExpandedChange = { expanded = it && !actionLoading }
             ) {
                 OutlinedTextField(
                     value = tipoRepuesto,
-                    onValueChange = { tipoRepuesto = it },
+                    onValueChange = { },
                     label = { Text("Tipo de repuesto *") },
                     readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                     isError = showErrors && tipoRepuesto.isBlank(),
-                    enabled = !isLoading,
+                    enabled = !actionLoading,
                     modifier = Modifier
                         .menuAnchor()
                         .fillMaxWidth()
@@ -122,7 +166,7 @@ fun SolicitudRepuestoScreen(
                 label = { Text("Cantidad *") },
                 singleLine = true,
                 isError = showErrors && cantidad.isBlank(),
-                enabled = !isLoading,
+                enabled = !actionLoading,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -132,7 +176,7 @@ fun SolicitudRepuestoScreen(
                 label = { Text("Descripción (motivo) *") },
                 minLines = 3,
                 isError = showErrors && descripcion.isBlank(),
-                enabled = !isLoading,
+                enabled = !actionLoading,
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -145,7 +189,7 @@ fun SolicitudRepuestoScreen(
             ) {
                 OutlinedButton(
                     onClick = onBack,
-                    enabled = !isLoading,
+                    enabled = !actionLoading,
                     modifier = Modifier.weight(1f)
                 ) { Text("Cancelar") }
 
@@ -156,14 +200,20 @@ fun SolicitudRepuestoScreen(
                                 tipoRepuesto.isNotBlank() &&
                                 cantidad.isNotBlank() &&
                                 descripcion.isNotBlank()
-                        if (!ok) { showErrors = true; return@Button }
+                        if (!ok) {
+                            showErrors = true
+                            return@Button
+                        }
 
-                        isLoading = true
-                        scope.launch {
-                            delay(1800)
-                            isLoading = false
-
-
+                        val solicitud = SolicitudRepuesto(
+                            codigo = codigo,
+                            tipo = tipoRepuesto,
+                            cantidad = cantidad.toInt(),
+                            descripcion = descripcion,
+                            nombreTecnico = nombreTecnico,
+                            fecha = LocalDate.now().toString()
+                        )
+                        viewModel.agregar(solicitud) {
                             val builder = NotificationCompat.Builder(context, "solicitudes_channel")
                                 .setSmallIcon(android.R.drawable.ic_menu_send)
                                 .setContentTitle("Solicitud enviada")
@@ -182,32 +232,22 @@ fun SolicitudRepuestoScreen(
                                 NotificationManagerCompat.from(context).areNotificationsEnabled()
                             ) {
                                 NotificationManagerCompat.from(context).notify(1001, builder.build())
-                            } else {
-
                             }
 
-                            onGuardado(
-                                SolicitudRepuesto(
-                                    codigo = codigo,
-                                    tipo = tipoRepuesto,
-                                    cantidad = cantidad.toInt(),
-                                    descripcion = descripcion,
-                                    nombreTecnico = nombreTecnico
-                                )
-                            )
+                            onGuardado()
                         }
                     },
-                    enabled = !isLoading,
+                    enabled = !actionLoading,
                     modifier = Modifier.weight(1f)
                 ) {
-                    if (isLoading) {
+                    if (actionLoading) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
                                 strokeWidth = 2.dp
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("Cargando repuesto...")
+                            Text("Guardando...")
                         }
                     } else {
                         Text("Guardar")
@@ -217,11 +257,11 @@ fun SolicitudRepuestoScreen(
         }
     }
 
-    if (isLoading) {
+    if (actionLoading) {
         AlertDialog(
             onDismissRequest = { },
             confirmButton = {},
-            title = { Text("Cargando repuesto") },
+            title = { Text("Guardando solicitud") },
             text = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

@@ -3,13 +3,13 @@ package com.example.partsasign1.data.remote.repository
 import com.example.partsasign1.data.remote.RetrofitClients
 import com.example.partsasign1.data.remote.api.AuthApi
 import com.example.partsasign1.data.remote.api.OtApi
-import com.example.partsasign1.data.remote.api.RecepcionApi
 import com.example.partsasign1.data.remote.api.RepuestosApi
+import com.example.partsasign1.data.remote.api.SolicitudesApi
 import com.example.partsasign1.data.remote.model.LoginRequest
 import com.example.partsasign1.data.remote.model.LoginResponse
 import com.example.partsasign1.data.remote.model.OtProgramadaDto
-import com.example.partsasign1.data.remote.model.RecepcionDto
 import com.example.partsasign1.data.remote.model.RepuestoDto
+import com.example.partsasign1.data.remote.model.SolicitudDto
 import com.example.partsasign1.data.remote.model.UsuarioDto
 import retrofit2.Response
 
@@ -32,12 +32,12 @@ class OtRemoteRepository(
     suspend fun eliminar(id: Int): Response<Unit> = api.eliminar(id)
 }
 
-class RecepcionRemoteRepository(
-    private val api: RecepcionApi = RetrofitClients.recepcionApi
+class SolicitudesRemoteRepository(
+    private val api: SolicitudesApi = RetrofitClients.solicitudesApi
 ) {
-    suspend fun listar(): List<RecepcionDto> = api.listar()
-    suspend fun crear(body: RecepcionDto): RecepcionDto = api.crear(body)
-    suspend fun actualizar(id: Int, body: RecepcionDto): RecepcionDto = api.actualizar(id, body)
+    suspend fun listar(): List<SolicitudDto> = api.listar()
+    suspend fun crear(body: SolicitudDto): SolicitudDto = api.crear(body)
+    suspend fun actualizar(id: Int, body: SolicitudDto): SolicitudDto = api.actualizar(id, body)
     suspend fun eliminar(id: Int): Response<Unit> = api.eliminar(id)
 }
 

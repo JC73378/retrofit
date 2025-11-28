@@ -89,6 +89,7 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
             val repuestoId = backStackEntry.arguments?.getString("id") ?: ""
 
             OTProgramadaScreen(
+                viewModel = sharedPendingViewModel,
                 repuestoId = repuestoId,
                 onBack = { navController.popBackStack() },
                 onOTGuardada = { id ->
@@ -127,10 +128,27 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
 
         composable(Route.Solicitud.path) {
             SolicitudRepuestoScreen(
+                viewModel = solicitudesVM,
+                onBack = { navController.popBackStack() },
+                onGuardado = {
+                    navController.navigate(Route.Historial.path)
+                }
+            )
+        }
+
+        composable(Route.DeleteRequest.path) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id") ?: ""
+            val nombreEncoded = backStackEntry.arguments?.getString("nombre") ?: ""
+            val nombre = try { java.net.URLDecoder.decode(nombreEncoded, java.nio.charset.StandardCharsets.UTF_8.toString()) } catch (_: Exception) { nombreEncoded }
+
+            DeleteRepuestoScreen(
+                repuestoId = id,
+                repuestoNombre = nombre,
                 onBack = { navController.popBackStack() },
                 onGuardado = { s ->
-                    solicitudesVM.agregar(s)
-                    navController.navigate(Route.Historial.path)
+                    solicitudesVM.agregar(s) {
+                        navController.navigate(Route.Historial.path)
+                    }
                 }
             )
         }
@@ -141,5 +159,6 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
                 onBack = { navController.popBackStack() }
             )
         }
+
     }
 }

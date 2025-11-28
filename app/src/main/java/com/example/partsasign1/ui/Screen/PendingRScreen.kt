@@ -1,6 +1,5 @@
 package com.example.partsasign1.ui.Screen
 
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,7 +7,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,15 +24,18 @@ fun PendingRScreen(
     onBack: () -> Unit,
     onNavigateToOTProgramada: (String) -> Unit
 ) {
-    val pendingRepuestos by viewModel.pendingRepuestos.collectAsState()
+    val pendingOts by viewModel.pendingOts.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val actionLoading by viewModel.actionLoading.collectAsState()
+    val actionError by viewModel.actionError.collectAsState()
+    val actionMessage by viewModel.actionMessage.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Repuestos por Recibir") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Atrás") } }
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Atras") } }
             )
         }
     ) { padding ->
@@ -50,6 +54,7 @@ fun PendingRScreen(
                         Text("Cargando pendientes...")
                     }
                 }
+
                 error != null -> {
                     Column(
                         modifier = Modifier
@@ -65,53 +70,92 @@ fun PendingRScreen(
                         }
                     }
                 }
-                pendingRepuestos.isEmpty() -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = Color.Green,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    Text("No hay repuestos pendientes", style = MaterialTheme.typography.bodyLarge)
+
+                pendingOts.isEmpty() -> {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color.Green,
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text("No hay repuestos pendientes", style = MaterialTheme.typography.bodyLarge)
+                    }
                 }
-                }
+
                 else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(pendingRepuestos) { repuesto ->
-                        Card(
-                            onClick = { onRepuestoClick(repuesto.id) },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(Modifier.padding(16.dp)) {
-                                Text(repuesto.nombre, style = MaterialTheme.typography.titleMedium)
-                                Spacer(Modifier.height(4.dp))
-                                Text("Código: ${repuesto.codigo365}", style = MaterialTheme.typography.bodyMedium)
-                                Text("Ubicación: ${repuesto.ubicacion}", style = MaterialTheme.typography.bodySmall)
-                                Spacer(Modifier.height(8.dp))
-                                Button(
-                                    onClick = {
-                                        onNavigateToOTProgramada(repuesto.id)
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text("Marcar como Recibido")
+                    actionError?.let {
+                        Text(
+                            text = it,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    actionMessage?.let {
+                        Text(
+                            text = it,
+                            color = Color.Green,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(pendingOts) { ot ->
+                            Card(
+                                onClick = { onRepuestoClick(ot.repuestoId) },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(Modifier.padding(16.dp)) {
+                                    Text(
+                                        ot.repuestoNombre ?: "Repuesto ${ot.repuestoId}",
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text("OT #${ot.id}", style = MaterialTheme.typography.bodySmall)
+                                    Text("Tecnico: ${ot.nombreCompletoTecnico}", style = MaterialTheme.typography.bodyMedium)
+                                    Text("Rut: ${ot.rutTecnico}", style = MaterialTheme.typography.bodySmall)
+                                    Text("Equipo: ${ot.numeroEquipo}", style = MaterialTheme.typography.bodySmall)
+                                    Text("Fecha firma: ${ot.fechaFirma}", style = MaterialTheme.typography.bodySmall)
+                                    Spacer(Modifier.height(8.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        OutlinedButton(
+                                            onClick = { onNavigateToOTProgramada(ot.repuestoId) },
+                                            modifier = Modifier.weight(1f),
+                                            enabled = !actionLoading
+                                        ) {
+                                            Text("Ver / editar")
+                                        }
+                                        Button(
+                                            onClick = { viewModel.eliminarOt(ot.id) },
+                                            modifier = Modifier.weight(1f),
+                                            enabled = !actionLoading
+                                        ) {
+                                            Text("Eliminar")
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                }
                 }
             }
         }

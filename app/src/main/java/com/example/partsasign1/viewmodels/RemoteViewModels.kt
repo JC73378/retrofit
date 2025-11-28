@@ -3,13 +3,11 @@ package com.example.partsasign1.viewmodels
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.partsasign1.data.remote.model.OtProgramadaDto
-import com.example.partsasign1.data.remote.model.RecepcionDto
 import com.example.partsasign1.data.remote.model.RepuestoDto
 import com.example.partsasign1.data.remote.model.LoginResponse
 import com.example.partsasign1.data.remote.model.UsuarioDto
 import com.example.partsasign1.data.remote.repository.AuthRemoteRepository
 import com.example.partsasign1.data.remote.repository.OtRemoteRepository
-import com.example.partsasign1.data.remote.repository.RecepcionRemoteRepository
 import com.example.partsasign1.data.remote.repository.RepuestosRemoteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -125,74 +123,6 @@ class OtRemoteViewModel(
     }
 
     fun actualizar(id: Int, dto: OtProgramadaDto) = viewModelScope.launch {
-        _loading.value = true
-        _error.value = null
-        try {
-            repo.actualizar(id, dto)
-            refrescar()
-        } catch (e: Exception) {
-            _error.value = e.message
-        } finally {
-            _loading.value = false
-        }
-    }
-
-    fun eliminar(id: Int) = viewModelScope.launch {
-        _loading.value = true
-        _error.value = null
-        try {
-            repo.eliminar(id)
-            refrescar()
-        } catch (e: Exception) {
-            _error.value = e.message
-        } finally {
-            _loading.value = false
-        }
-    }
-}
-
-class RecepcionRemoteViewModel(
-    private val repo: RecepcionRemoteRepository = RecepcionRemoteRepository()
-) : ViewModel() {
-    private val _items = MutableStateFlow<List<RecepcionDto>>(emptyList())
-    val items: StateFlow<List<RecepcionDto>> = _items
-
-    private val _loading = MutableStateFlow(false)
-    val loading: StateFlow<Boolean> = _loading
-
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error
-
-    init {
-        refrescar()
-    }
-
-    fun refrescar() = viewModelScope.launch {
-        _loading.value = true
-        _error.value = null
-        try {
-            _items.value = repo.listar()
-        } catch (e: Exception) {
-            _error.value = e.message
-        } finally {
-            _loading.value = false
-        }
-    }
-
-    fun crear(dto: RecepcionDto) = viewModelScope.launch {
-        _loading.value = true
-        _error.value = null
-        try {
-            repo.crear(dto)
-            refrescar()
-        } catch (e: Exception) {
-            _error.value = e.message
-        } finally {
-            _loading.value = false
-        }
-    }
-
-    fun actualizar(id: Int, dto: RecepcionDto) = viewModelScope.launch {
         _loading.value = true
         _error.value = null
         try {

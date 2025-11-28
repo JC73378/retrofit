@@ -29,6 +29,16 @@ data class RecepcionDto(
     val observacion: String? = null
 )
 
+data class SolicitudDto(
+    val id: Int? = null,
+    val codigo: String,
+    val tipo: String,
+    val cantidad: Int,
+    val descripcion: String,
+    val nombreTecnico: String,
+    val fecha: String? = null // ISO string
+)
+
 data class UsuarioDto(
     val id: Int? = null,
     val username: String,

@@ -12,8 +12,10 @@ sealed class Route(val path: String) {
     data object Detail     : Route("detail/{id}")
 
     data object Solicitud  : Route("solicitud")
+    data object DeleteRequest : Route("delete_repuesto/{id}/{nombre}")
 
     data object Historial : Route("historial_repuestos")
 
     data object OTProgramada : Route("ot_programada/{id}")
+
 }
